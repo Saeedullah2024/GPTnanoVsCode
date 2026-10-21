@@ -29,5 +29,13 @@ class PositionalEncoding(nn.Module):
         position = torch.arange(0 , seq_len , dtype=torch.float).unsqueeze(1)  # -> this create 1-D (Just Rows One column) (row , )
         #Create the Divide term for the PE(pos, 2i)   = sin(pos / 10000^(2i/d_model))
         div_term = torch.exp(torch.arange(0 , d_model , 2).float() * (-math.log(10000.0) / d_model)) 
-        
+        #create for the Sin term for even index
+        pe[: , 0::2] = torch.sin(position * div_term) #For the Even index
+        pe[: , 1::2] = torch.cos(position * div_term) #Foe the Odd index
+        pe = pe.unsqueeze(0) # (1 , seq_len , d_model)
+        self.register_buffer('pe' , pe) #This will save the tensors in the model
+    
+    def forward(self , x):
+        x = x + (self.pe[: , : x.shape[1] , : ]).requires_grad_(False)#tensor[dim0, dim1, dim2] and requiresgrad -> don't backpropagate through
+        return self.dropout(x)
         
